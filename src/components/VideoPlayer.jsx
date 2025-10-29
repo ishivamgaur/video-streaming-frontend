@@ -2,6 +2,9 @@ import React, { useEffect, useRef } from "react";
 import videojs from "video.js";
 import "video.js/dist/video-js.css";
 
+import "videojs-hls-quality-selector";
+import hlsQualitySelector from "videojs-hls-quality-selector";
+
 function VideoPlayer({ video }) {
   const videoRef = useRef(null);
   const playerRef = useRef(null);
@@ -13,19 +16,23 @@ function VideoPlayer({ video }) {
 
     if (!playerRef.current) {
       const player = videojs(videoElement, {
-        autoplay: false, 
+        autoplay: false,
         controls: true,
         responsive: true,
         fluid: true,
+        plugins: {
+          hlsQualitySelector: {
+            displayCurrentQuality: true,
+          },
+        },
       });
       playerRef.current = player;
     } else {
       const player = playerRef.current;
     }
 
-    return () => {
-    };
-  }, []); 
+    return () => {};
+  }, []);
 
   useEffect(() => {
     const player = playerRef.current;
@@ -35,7 +42,7 @@ function VideoPlayer({ video }) {
         src: `http://localhost:5000${video.masterPlaylistUrl}`,
         type: "application/x-mpegURL",
       });
-      player.play(); 
+      player.play();
     }
 
     return () => {
