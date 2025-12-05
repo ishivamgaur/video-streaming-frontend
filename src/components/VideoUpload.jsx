@@ -1,89 +1,114 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 
 function VideoUpload({ onUploadSuccess }) {
-  const [title, setTitle] = useState('');
-  const [videoFile, setVideoFile] = useState(null);
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [file, setFile] = useState(null);
+  const [title, setTitle] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [message, setMessage] = useState("");
 
   const handleFileChange = (e) => {
-    setVideoFile(e.target.files[0]);
+    setFile(e.target.files[0]);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setMessage('');
-    setError('');
+  const handleTitleChange = (e) => {
+    setTitle(e.target.value);
+  };
 
-    if (!videoFile) {
-      setError('Please select a video file.');
+  const handleUpload = async (e) => {
+    e.preventDefault();
+    if (!file) {
+      setMessage("Please select a file first.");
       return;
     }
 
-    setLoading(true);
+    setUploading(true);
+    setMessage("");
+
     const formData = new FormData();
-    // The key 'video' must match `upload.single('video')` on your backend
-    formData.append('video', videoFile);
-    formData.append('title', title || videoFile.name);
+    formData.append("video", file);
+    formData.append("title", title);
 
     try {
-      const response = await fetch('http://localhost:5000/api/upload', {
-        method: 'POST',
+      const response = await fetch("http://localhost:5000/api/upload", {
+        method: "POST",
         body: formData,
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        setMessage(data.message);
-        setTitle('');
-        setVideoFile(null);
-        // Notify the parent component to refresh the video list
+        setMessage("Upload successful! Processing started.");
+        setFile(null);
+        setTitle("");
         if (onUploadSuccess) {
           onUploadSuccess();
         }
       } else {
-        setError(data.error || 'Upload failed.');
+        setMessage(`Upload failed: ${data.error}`);
       }
-    } catch (err) {
-      setError('Network error or server is down.');
-      console.error('Upload error:', err);
+    } catch (error) {
+      setMessage(`Error: ${error.message}`);
     } finally {
-      setLoading(false);
+      setUploading(false);
     }
   };
 
   return (
-    <div className="video-upload-container">
-      <h2>Upload New Video</h2>
-      <form onSubmit={handleSubmit}>
+    <div className="bg-white rounded-lg shadow-md p-6">
+      <form onSubmit={handleUpload} className="space-y-4">
         <div>
-          <label htmlFor="title">Video Title (optional):</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Video Title (Optional)
+          </label>
           <input
             type="text"
-            id="title"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={handleTitleChange}
             placeholder="Enter video title"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
           />
         </div>
+
         <div>
-          <label htmlFor="videoFile">Select Video File:</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Video File
+          </label>
           <input
             type="file"
-            id="videoFile"
             accept="video/*"
             onChange={handleFileChange}
-            required
+            className="block w-full text-sm text-gray-500
+              file:mr-4 file:py-2 file:px-4
+              file:rounded-full file:border-0
+              file:text-sm file:font-semibold
+              file:bg-indigo-50 file:text-indigo-700
+              hover:file:bg-indigo-100
+            "
           />
         </div>
-        <button type="submit" disabled={loading}>
-          {loading ? 'Uploading...' : 'Upload Video'}
+
+        <button
+          type="submit"
+          disabled={uploading}
+          className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
+            uploading ? "opacity-50 cursor-not-allowed" : ""
+          }`}
+        >
+          {uploading ? "Uploading..." : "Upload Video"}
         </button>
+
+        {message && (
+          <div
+            className={`mt-4 text-sm p-3 rounded-md ${
+              message.includes("failed") || message.includes("Error")
+                ? "bg-red-50 text-red-700"
+                : "bg-green-50 text-green-700"
+            }`}
+          >
+            {message}
+          </div>
+        )}
       </form>
-      {message && <p className="success-message">{message}</p>}
-      {error && <p className="error-message">{error}</p>}
     </div>
   );
 }
